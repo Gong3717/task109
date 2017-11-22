@@ -1,4 +1,6 @@
-// 打印赠送商品会出现一行空行
+'use strict';
+// 和main.js一样,多一个子函数,打印赠送商品不会出现空行
+//module.exports = function main(collection) {
 var collection = [
     'ITEM000001',
     'ITEM000001',
@@ -13,19 +15,23 @@ var collection = [
 // console.log(collection);
 
 var temp=grouping_count(collection);
-var temp1=goodlist(temp);
+var temp1=inputlist(temp);
+var temp2=goodlist(temp1);
 console.log(
     "***<没钱赚商店>购物清单***\n"+
-    print_goodlist(temp1)+'\n'+
+    print_goodlist(temp2)+'\n'+
     "----------------------\n"+
     "挥泪赠送商品：\n"+
-    print_promotionslist(temp1)+'\n'+
+    promotionslist(temp1)+'\n'+
     "----------------------\n" +
-    calculate(temp1)+'\n'+
+    calculate(temp2)+'\n'+
     "**********************");
 // return 0;
+
 //};
-// 获取全部商品信息
+
+
+//  获取全部商品信息
 function loadAllItems() {
     return [
         {
@@ -108,13 +114,13 @@ function grouping_count(collection) {
     return result;
 }
 
-// 购物清单商品条形码详细信息
-function goodlist(collection) {
-    var temp=[];
+// 商品条形码及相关信息
+function inputlist(collection){
+    var result=[];
     collection.forEach(function(item,index,array){
         for(var i =0;i<loadAllItems().length;i++) {
             if (item.key=== loadAllItems()[i].barcode) {
-                temp.push({
+                result.push({
                     barcode:loadAllItems()[i].barcode,
                     name: loadAllItems()[i].name,
                     count: item.count ,
@@ -124,32 +130,35 @@ function goodlist(collection) {
             }
         }
     });
+    // console.log(result);
+    return result;
+}
+// 购物清单详细信息
+function goodlist(collection) {
     var result = [];
     var isPromotions;
-    for (var t = 0; t < temp.length;) {
+    for (var t = 0; t < collection.length;) {
         var subtotal = 0;
         var original = 0;
         for (var j = 0; j < loadPromotions()[0].barcodes.length; j++) {
 
             isPromotions = false;
-            if (temp[t].barcode === loadPromotions()[0].barcodes[j]) {
+            if (collection[t].barcode === loadPromotions()[0].barcodes[j]) {
                 isPromotions = true;
-                original = temp[t].count * temp[t].price;
+                original = collection[t].count * collection[t].price;
                 //console.log(result[t].count);
-                if (temp[t].count > 2) {
-                    var a = parseInt(temp[t].count / 3) * 2 + (temp[t].count % 3);
+                if (collection[t].count > 2) {
+                    var a = parseInt(collection[t].count / 3) * 2 + (collection[t].count % 3);
                     // console.log(a);
-                    subtotal = a * temp[t].price;
+                    subtotal = a * collection[t].price;
                 } else {
-                    subtotal = temp[t].count * temp[t].price;
+                    subtotal = collection[t].count * collection[t].price;
                 }
                 result.push({
-                    barcode:temp[t].barcode,
-                    name: temp[t].name,
-                    quantity: temp[t].count,
-                    freenum: temp[t].count-a,
-                    price: temp[t].price,
-                    unit:temp[t].unit,
+                    name: collection[t].name,
+                    quantity: collection[t].count,
+                    price: collection[t].price,
+                    unit:collection[t].unit,
                     sum: subtotal,
                     orignal_price: original
                 });
@@ -157,15 +166,14 @@ function goodlist(collection) {
             }
         }
         if (!isPromotions) {
-            subtotal = temp[t].count * temp[t].price;
+            subtotal = collection[t].count * collection[t].price;
             original = subtotal;
             result.push({
-                barcode:temp[t].barcode,
-                name: temp[t].name,
-                quantity: temp[t].count,
-                freenum: 0,
-                unit:temp[t].unit,
-                price: temp[t].price,
+                //barcode:result[t].barcode,
+                name: collection[t].name,
+                quantity: collection[t].count,
+                unit:collection[t].unit,
+                price: collection[t].price,
                 sum: subtotal,
                 orignal_price: original
             });
@@ -179,8 +187,8 @@ function goodlist(collection) {
 // 打印商品清单
 function print_goodlist(collection){
     var print_goodlist = collection.map(function (item, index, array) {
-        var goodlist = "名称：" + item.name + ",数量：" + item.quantity + item.unit + ",单价:"
-            + item.price.toFixed(2) + "(元)" + ",小计："+ item.sum.toFixed(2) + "(元)";
+        var goodlist = "名称：" + item.name + "，数量：" + item.quantity + item.unit + ",单价:"
+            + item.price.toFixed(2) + "(元)" + "，小计："+ item.sum.toFixed(2) + "(元)";
         //console.log(goodlist + '\n');
         return goodlist;
     });
@@ -188,16 +196,39 @@ function print_goodlist(collection){
 }
 
 // 打印折扣商品清单
-function print_promotionslist(collection){
-    var print_result=collection.map(function(item,index,array){
-        if(item.freenum>0){
-           // var promotions = "名称："+ item.name +",数量："+ item.freenum + item.unit +'\n';  //这样打印会出现2个逗号
-            var promotions = "名称："+ item.name +",数量："+ item.freenum + item.unit ;
-            return promotions;
+function promotionslist(collection){
+    var result=[];
+    for(var t=0;t<collection.length;t++){
+        var subtotal=0;
+        var original=0;
+        for(var j =0;j<loadPromotions()[0].barcodes.length;j++){
+            if(collection[t].barcode===loadPromotions()[0].barcodes[j]){
+                if(collection[t].count>2){
+                    var a=parseInt(collection[t].count/3)*2+(collection[t].count % 3);
+                    result.push({
+                        name: collection[t].name,
+                        quantity: collection[t].count-a,
+                        unit:collection[t].unit
+                    });
+                }
+                // else{
+                //     var a=parseInt(collection[t].count/3)*2+(collection[t].count % 3);
+                //     result.push({
+                //         name: collection[t].name,
+                //         quantity: 0,
+                //         unit:collection[t].unit
+                //     });
+                // }
+            }
         }
+
+    }
+    //console.log(result);
+    var print_result=result.map(function(item,index,array){
+        var promotions = "名称："+ item.name +"，数量："+ item.quantity + item.unit;
+        return promotions;
     });
     return print_result.join('\n');
-   // return print_result;
 }
 
 // 计算商品总金额和折扣
